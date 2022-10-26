@@ -1,0 +1,13 @@
+---
+# docker-compose
+version: '3.8'
+
+services:
+  httpbin:
+    image: docker.io/kennethreitz/httpbin:latest
+    networks:
+      - ${NETWORK_NAME}
+    restart: on-failure
+    stop_signal: SIGKILL
+    command: gunicorn -b 0.0.0.0:8080 httpbin:app -k gevent
+    # p 8080:8080

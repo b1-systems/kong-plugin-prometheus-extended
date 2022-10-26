@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+cassowary_command="$(command -v cassowary)"
+declare -r cassowary_command
+
+declare -r PROTOCOL="http"
+declare -r HOST="127.0.0.1:8000"
+declare -ra ROUTE_PATHS=(\
+    "path21"\
+    "path22"\
+)
+# testing unauthenticated and the two consumers
+declare -ra CONSUMER_KEYS=(\
+    ""\
+    "ericskey"\
+    "idlekey"\
+)
+declare -r PATH="anything"
+
+# $1 lowest allowed number
+# $2 highest allowed number
+function draw-number {
+    local number=0
+    until [[ $number -ge $1 && $number -le $2 ]]; do
+        number=$RANDOM
+    done
+    echo $number
+}
+
+for route_path in "${ROUTE_PATHS[@]}"; do
+    for consumer_key in "${CONSUMER_KEYS[@]}"; do
+        requests=$(draw-number 100 200)
+        users=$(draw-number 1 10)
+        "$cassowary_command" run \
+            --url "${PROTOCOL}://${HOST}/${route_path}/${PATH}" \
+            --requests "$requests" \
+            --concurrency "$users" \
+            --header "Apikey: ${consumer_key}"
+    done
+done
