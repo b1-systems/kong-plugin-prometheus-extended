@@ -1,5 +1,5 @@
 ---
-_format_version: "3.0"
+_format_version: "2.1"
 # _transform: true
 
 services:
@@ -44,11 +44,12 @@ services:
         enabled: true
       - name: prometheus
         config:
-          bandwidth_metrics: true
-          latency_metrics: true
           per_consumer: true
-          status_code_metrics: true
-          upstream_health_metrics: true
+          # following metrics are only available from Kong 3.0 onwards
+          #bandwidth_metrics: true
+          #latency_metrics: true
+          #status_code_metrics: true
+          #upstream_health_metrics: true
         enabled: true
         protocols:
           - grpc
