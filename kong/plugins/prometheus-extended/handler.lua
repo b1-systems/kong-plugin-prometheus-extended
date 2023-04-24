@@ -2,6 +2,7 @@
 -- license: Apache-2.0 https://www.apache.org/licenses/LICENSE-2.0
 -- author: Felix Glaser <glaser@b1-systems.de>
 
+package.loaded['prometheus_resty_counter'] = require("resty.counter")
 local exporter = require("kong.plugins.prometheus-extended.exporter")
 local kong = kong
 
