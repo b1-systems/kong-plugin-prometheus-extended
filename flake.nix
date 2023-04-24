@@ -8,7 +8,7 @@
       type = "github";
       owner = "Kong";
       repo = "kong-pongo";
-      ref = "1.3.0";
+      ref = "2.6.0";
       flake = false;
     };
   };
@@ -20,17 +20,17 @@
         packages = utils.lib.flattenTree {
           deck = pkgs.buildGoModule rec {
             pname = "deck";
-            version = "1.5.1";
+            version = "1.19.1";
 
             src = pkgs.fetchFromGitHub {
               owner = "Kong";
               repo = pname;
               rev = "v${version}";
-              sha256 = "sha256-r4Oqzs502iKBJL2/GhQBh7tESRE+vMaXZfzLfXknKyM=";
+              sha256 = "sha256-ao3SGtHwDH+1zTYAzeN37cRNLjCaSFULkXOxLTKTvxc=";
             };
 
             vendorSha256 =
-              "sha256-W54z9j8NTQYdM/HvETpKGcfAI5xMJbzurcK7UcNNrZQ=";
+              "sha256-xFynhV1z3+8K613pFxoVxxQeG1N+rV8/gzkpy9MPF/0=";
 
             excludedPackages = [ ];
 
@@ -49,7 +49,7 @@
         # preferably use direnv to activate
         devShell = pkgs.mkShell {
           buildInputs = with pkgs;
-            [ cassowary curl docker-compose_2 fx jq pgcli ]
+            [ cassowary curl docker-compose fx jq pgcli ]
             ++ [ packages.deck packages.pongo ] ++ (with pkgs.luaPackages; [
               luarocks
               luacov
