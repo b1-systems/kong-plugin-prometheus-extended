@@ -3,6 +3,8 @@
 -- author: Felix Glaser <glaser@b1-systems.de>
 
 local helpers = require "spec.helpers"
+local cjson = require "cjson"
+local intercept = helpers.intercept
 
 
 local PLUGIN_NAME = "prometheus-extended"
@@ -10,7 +12,7 @@ local PLUGIN_NAME = "prometheus-extended"
 
 for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
   describe(PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
-    local client
+    local aclient, pclient
 
     lazy_setup(function()
 
@@ -21,11 +23,14 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
       local route1 = bp.routes:insert({
         hosts = { "test1.com" },
       })
-      -- add the plugin to test to the route we created
+      bp.plugins:insert {
+        name = "prometheus",
+        config = {
+          per_consumer = true
+        },
+      }
       bp.plugins:insert {
         name = PLUGIN_NAME,
-        route = { id = route1.id },
-        config = {},
       }
 
       -- start kong
@@ -46,14 +51,70 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
     end)
 
     before_each(function()
-      client = helpers.proxy_client()
+      aclient = helpers.admin_client()
+      pclient = helpers.proxy_client()
     end)
 
     after_each(function()
-      if client then client:close() end
+      if aclient then aclient:close() end
+      if pclient then pclient:close() end
     end)
 
+    describe("check precondition", function()
+      it("metrics endpoint is accessible", function()
+        local r = assert(aclient:send {
+          method = "GET",
+          path = "/metrics",
+        })
+        assert.res_status(200, r)
+      end)
 
+      it("plugin is loaded and enabled", function()
+        local r = aclient:send {
+          method = "GET",
+          path = "/plugins",
+        }
+
+        local plugin_json = r:read_body()
+        local plugins = cjson.decode(plugin_json)
+        local plugins_found = {}
+        for i, plugin in ipairs(plugins.data) do
+          plugins_found[plugin.name] = plugin.enabled
+        end
+        assert(plugins_found["prometheus-extended"])
+      end)
+    end)
+
+    describe("check metrics endpoint has", function()
+      local UUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
+      local metrics = {
+        kong_http_requests_consumer_endpoint_total = '{service="127.0.0.1",route="' .. UUID_PATTERN .. '",consumer=""} [0-9]+',
+        kong_nginx_worker_count = '{node_id="' .. UUID_PATTERN .. '"} [0-9]+',
+        kong_nginx_worker_pid = '{node_id="' .. UUID_PATTERN .. '",worker_id="0"} [0-9]+',
+      }
+      for metric,pattern in pairs(metrics) do
+        it(metric, function()
+          local pr1 = assert(pclient:send {
+            method = "GET",
+            path = "/request",
+            headers = {
+              host = "test1.com",
+            },
+          })
+          assert.res_status(200, pr1)
+
+          helpers.wait_until(function()
+            local res = assert(aclient:send {
+              method = "GET",
+              path = "/metrics",
+            })
+            local body = assert.res_status(200, res)
+
+            return body:find(metric .. pattern, nil, false)
+          end)
+        end)
+      end
+    end)
 
   end)
 

@@ -1,0 +1,83 @@
+---
+_format_version: "3.0"
+# _transform: true
+
+services:
+  - connect_timeout: 60000
+    host: httpbin
+    name: httpbin-service
+    path: /
+    port: 8080
+    protocol: http
+    read_timeout: 60000
+    retries: 5
+    write_timeout: 60000
+    routes:
+      - name: route21
+        paths:
+          - /path21
+        path_handling: v0
+        preserve_host: false
+        protocols:
+          - http
+          - https
+        regex_priority: 0
+        strip_path: true
+        https_redirect_status_code: 426
+        request_buffering: true
+        response_buffering: true
+      - name: route22
+        paths:
+          - /path22
+        path_handling: v0
+        preserve_host: false
+        protocols:
+          - http
+          - https
+        regex_priority: 0
+        strip_path: true
+        https_redirect_status_code: 426
+        request_buffering: true
+        response_buffering: true
+    plugins:
+      - name: prometheus-extended
+        enabled: true
+      - name: prometheus
+        config:
+          per_consumer: true
+          # following metrics are only available from Kong 3.0 onwards
+          bandwidth_metrics: true
+          latency_metrics: true
+          status_code_metrics: true
+          upstream_health_metrics: true
+        enabled: true
+        protocols:
+          - grpc
+          - grpcs
+          - http
+          - https
+      - name: key-auth
+        config:
+          key_names:
+            - apikey
+consumers:
+  - username: eric
+    keyauth_credentials:
+      - key: ericskey
+  - username: idle-service-user
+    keyauth_credentials:
+      - key: idlekey
+      # plugins:
+      #   - name: prometheus
+      #     config:
+      #       bandwidth_metrics: false
+      #       latency_metrics: false
+      #       per_consumer: false
+      #       status_code_metrics: false
+      #       upstream_health_metrics: false
+      #     enabled: false
+      #     protocols:
+      #       - grpc
+      #       - grpcs
+      #       - http
+      #       - https
