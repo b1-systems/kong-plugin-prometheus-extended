@@ -40,7 +40,7 @@ local function init()
 
   metrics.nginx_worker_pid = prometheus:gauge("nginx_worker_pid",
                                               "PIDs of nginx workers",
-                                              {"nod_id", "worker_id"})
+                                              {"node_id", "worker_id"})
 end
 
 local function init_worker()
