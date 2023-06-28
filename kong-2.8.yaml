@@ -67,17 +67,3 @@ consumers:
   - username: idle-service-user
     keyauth_credentials:
       - key: idlekey
-      # plugins:
-      #   - name: prometheus
-      #     config:
-      #       bandwidth_metrics: false
-      #       latency_metrics: false
-      #       per_consumer: false
-      #       status_code_metrics: false
-      #       upstream_health_metrics: false
-      #     enabled: false
-      #     protocols:
-      #       - grpc
-      #       - grpcs
-      #       - http
-      #       - https
