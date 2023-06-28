@@ -4,10 +4,9 @@
 
 local helpers = require "spec.helpers"
 local cjson = require "cjson"
-local intercept = helpers.intercept
-
 
 local PLUGIN_NAME = "prometheus-extended"
+local route2_id = ""
 
 
 for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
@@ -23,12 +22,21 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
       local route1 = bp.routes:insert({
         hosts = { "test1.com" },
       })
+      -- inject a second route for later testing
+      local route2 = bp.routes:insert({
+        hosts = { "test2.com" },
+      })
+      -- save the UUID of route2 for later use
+      route2_id = route2.id
+
+      -- load the prometheus plugin, which is required for prometheus-extended
       bp.plugins:insert {
         name = "prometheus",
         config = {
           per_consumer = true
         },
       }
+      -- and load prometheus-extended afterwards
       bp.plugins:insert {
         name = PLUGIN_NAME,
       }
@@ -92,6 +100,7 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
         kong_nginx_worker_count = '{node_id="' .. UUID_PATTERN .. '"} [0-9]+',
         kong_nginx_worker_pid = '{node_id="' .. UUID_PATTERN .. '",worker_id="0"} [0-9]+',
       }
+
       for metric,pattern in pairs(metrics) do
         it(metric, function()
           local pr1 = assert(pclient:send {
@@ -110,10 +119,39 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
             })
             local body = assert.res_status(200, res)
 
+            assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+
             return body:find(metric .. pattern, nil, false)
           end)
         end)
       end
+    end)
+
+    describe("check that", function()
+      it("requests per endpoint and consumer are counted", function()
+        local pr1 = assert(pclient:send {
+          method = "GET",
+          path = "/status/200",
+          headers = {
+            host = "test2.com",
+          },
+        })
+        assert.res_status(200, pr1)
+
+        local pattern = 'kong_http_requests_consumer_endpoint_total{service="127.0.0.1",route="' .. route2_id .. '",consumer=""} 1'
+
+        helpers.wait_until(function()
+          local res = assert(aclient:send {
+            method = "GET",
+            path = "/metrics",
+          })
+          local body = assert.res_status(200, res)
+
+          assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+
+          return body:find(pattern, nil, true)
+        end)
+      end)
     end)
 
   end)
