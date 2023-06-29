@@ -1,6 +1,6 @@
 local plugin_name = "prometheus-extended"
 local package_name = "kong-plugin-" .. plugin_name
-local package_version = "0.1.0"
+local package_version = "0.2.0"
 local rockspec_revision = "1"
 
 local github_account_name = "b1systems"
@@ -19,7 +19,7 @@ source = {
 
 description = {
   summary = "Extends Prometheus metrics for Kong.",
-  homepage = "https://"..github_account_name..".github.io/"..github_repo_name,
+  homepage = "https://github.com/"..github_account_name.."/"..github_repo_name,
   license = "Apache 2.0",
 }
 
